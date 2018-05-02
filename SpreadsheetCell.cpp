@@ -1,14 +1,41 @@
 #include "SpreadsheetCell.h"
 #include <iostream>
 #include <sstream>
-SpreadsheetCell::SpreadsheetCell()
+//SpreadsheetCell::SpreadsheetCell()//default ctor
+//{
+//}
+SpreadsheetCell::SpreadsheetCell() : mValue(0) 
+{
+
+}
+
+SpreadsheetCell::SpreadsheetCell(double initialValue)
+{
+	setValue(initialValue);
+}
+SpreadsheetCell::SpreadsheetCell(const std::string & initialValue) 
+	: SpreadsheetCell(stringToDouble(initialValue))
 {
 }
 
-SpreadsheetCell::~SpreadsheetCell()
+SpreadsheetCell::SpreadsheetCell(const SpreadsheetCell & src) // copy ctor
+	:mValue(src.mValue),mString(src.mString)
+{
+	
+}
+
+SpreadsheetCell::~SpreadsheetCell()//default dtor
 {
 }
-//returnvalue namespace::name const
+
+SpreadsheetCell & SpreadsheetCell::operator = (const SpreadsheetCell& rhs)
+{
+	if (this == &rhs) return *this;
+	mValue = rhs.mValue;
+	mString = rhs.mString;
+	return *this;
+}
+
 void SpreadsheetCell::setValue(double inValue) {
 	mValue = inValue;
 	mString = doubleToString(mValue);
