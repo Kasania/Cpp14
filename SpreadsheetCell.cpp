@@ -13,6 +13,7 @@ SpreadsheetCell::SpreadsheetCell(double initialValue)
 {
 	setValue(initialValue);
 }
+
 SpreadsheetCell::SpreadsheetCell(const std::string & initialValue) 
 	: SpreadsheetCell(stringToDouble(initialValue))
 {
@@ -24,9 +25,6 @@ SpreadsheetCell::SpreadsheetCell(const SpreadsheetCell & src) // copy ctor
 	
 }
 
-SpreadsheetCell::~SpreadsheetCell()//default dtor
-{
-}
 
 SpreadsheetCell & SpreadsheetCell::operator = (const SpreadsheetCell& rhs)
 {

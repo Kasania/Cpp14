@@ -1,10 +1,11 @@
 #pragma once
 #include <string>
+//#include "Spreadsheet.h"
 class SpreadsheetCell
 {
 public:
-	SpreadsheetCell() = default;
-	//SpreadsheetCell() :mValue(){};
+	SpreadsheetCell();
+	//SpreadsheetCell() : mValue(0);
 	//SpreadsheetCell() = delete; explicitly deleted ctor
 
 	SpreadsheetCell(double inValue);
