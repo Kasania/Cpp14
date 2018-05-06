@@ -6,8 +6,14 @@ auto main() -> int {
 
 	try {
 		ioErrorClass iec;
-		iec.run();
-		
+		iec.runIStream().runOStream();
+		iec.runIStream().runOStream();
+	}
+	catch (const iStreamException& e) {
+		std::cerr << e.what() << std::endl;
+	}
+	catch (const oStreamException& e) {
+		std::cerr << e.what() << std::endl;
 	}
 	catch (const ioException& e) {
 		std::cerr << e.what() << std::endl;

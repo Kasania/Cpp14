@@ -6,6 +6,7 @@ class ioException : public std::runtime_error
 {
 public:
 	ioException();
+	
 	ioException(const char * inMessage);
 	ioException(const std::string& inMessage);
 	virtual void setMessage(const std::string& message);
