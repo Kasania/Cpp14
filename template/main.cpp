@@ -16,12 +16,17 @@ auto main() -> int {
 		v1.insert(9);
 		v1.insert(10);
 		v1.reserve(30);
-		//v1.insert(11);
-		//std::cout << v1.at(10) << std::endl;
+		v1.insert(11);
+		v1.insert(14);
+		v1.insert(15);
+		v1.insert(16);
+		std::cout << v1.cap() << std::endl;
+		
 	}
 	catch (std::length_error e) {
 		std::cout << e.what() << std::endl;
 	}
+
 
 	return 0;
 }

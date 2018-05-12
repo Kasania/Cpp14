@@ -4,11 +4,14 @@
 */
 #include <initializer_list>
 #include <stdexcept>
+#include <memory>
 
 template <typename T>
 class vector {
 public :
 	static const size_t defaultCap = 10;
+
+	
 
 	vector(const size_t cap = defaultCap) {
 		curCap = cap;
@@ -49,11 +52,11 @@ public :
 	const bool reserve(const size_t cap)	{
 
 		T* newElements = new T[cap];
-		initializeElements(newElements, copyElements(elements, newElements, curCap), cap);
-		curCap = cap;
-		delete[] elements;//heap error occur!
+		initializeElements(newElements, moveElement(elements, newElements, 0, curCap), cap);
+		delete[] elements;
 		elements = newElements;
-		return true;
+		curCap = cap;
+		return true;	
 	}
 	
 	const size_t& size() const {
@@ -66,6 +69,8 @@ public :
 
 	const bool insert(const T& target, const size_t pos) {
 		//todo : insert method
+		//if empty insert
+		//else insert after move
 		return true;
 	}
 
@@ -129,8 +134,9 @@ private :
 	size_t curCap;
 	size_t lastPos;
 	size_t firstPos = 0;
-	T* elements;
 	size_t elementSize = sizeof T;
+	T* elements;
+	std::allocator<T> alloc;
 
 	//only use this for move elements
 	const bool release() {
@@ -171,15 +177,15 @@ private :
 
 	const size_t initializeElements(T* target, const size_t start, const size_t end) {
 		for (auto i = start; i < end; ++i) {
-			*(elements + i) = T();
+			*(target + i) = T();
 		}
 		return end;
 	}
 
-	const bool moveElement(T* src, T* dst) {
-		dst = src;
-		src = nullptr;
-		return true;
+	const size_t moveElement(T* src, T* dst, const size_t start, const size_t end) {
+		std::_Uninitialized_move((src + start), (src + end + 1), dst, alloc); 
+		return end;
 	}
 };
+
 
