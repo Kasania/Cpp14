@@ -8,20 +8,10 @@ auto main() -> int {
 	vector<int> v1;
 	vector<int> v2{ 1,2,3,4,5 };
 	try {
-		std::cout << v2.at(3) << std::endl;
-		v1 = v2;
-		v1.insert(6);
-		v1.insert(7);
-		v1.insert(8);
-		v1.insert(9);
-		v1.insert(10);
-		v1.reserve(30);
-		v1.insert(11);
-		v1.insert(14);
-		v1.insert(15);
-		v1.insert(16);
-		std::cout << v1.cap() << std::endl;
-		
+		v1 = {1,2,3,4,5};
+		v1.reserve(20);
+
+		std::cout << v1.at(3) << std::endl;
 	}
 	catch (std::length_error e) {
 		std::cout << e.what() << std::endl;
@@ -30,3 +20,4 @@ auto main() -> int {
 
 	return 0;
 }
+

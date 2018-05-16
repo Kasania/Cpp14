@@ -15,9 +15,7 @@ public :
 
 	vector(const size_t cap = defaultCap) {
 		curCap = cap;
-		curSize = 0;
-		lastPos = 0;
-		elements = new T[curCap];
+		elements = alloc.allocate(curCap);
 		initializeElements(elements, firstPos, curCap);
 	}
 	vector(const vector& v) {
@@ -34,8 +32,7 @@ public :
 		else {
 			curCap = defaultCap;
 		}
-		elements = new T[curCap];
-		curSize = 0;
+		elements = alloc.allocate(curCap);
 		for (auto i = values.begin(); i < values.end(); ++i) {
 			insert(*i);
 			++curSize;
@@ -45,7 +42,9 @@ public :
 	}
 	
 	~vector()	{
-		delete[] elements;
+		for(auto i = firstPos ;  i<curCap; ++i)
+		alloc.destroy(elements+i);
+		alloc.deallocate(elements, curCap);
 		elements = nullptr;
 	}
 
@@ -68,21 +67,46 @@ public :
 	}
 
 	const bool insert(const T& target, const size_t pos) {
+		if(pos < firstPos) throw std::length_error("Wrong Position!");
+		if (pos > curCap) reserve(pos + 1);
+
+		if (pos >= lastPos) {
+			lastPos = pos;
+			elements[lastPos++];
+		}
+		else {
+			
+			size_t oldLastPos = lastPos;
+			//moveElement()
+		}
+
 		//todo : insert method
-		//if empty insert
-		//else insert after move
+		//if pos >= last insert at pos, last = pos
+		//else move back pos~last to pos+1~last+1 , insert at pos
 		return true;
 	}
 
 	const bool insert(const T& target) {
-		if (curCap <= lastPos) reserve(curCap * 2);
+		
+		if (curCap <= lastPos) reserve(static_cast<int>(curCap * 1.5 + 1));
 		elements[lastPos++] = target;
 		return true;
 	}
 
 	T& at(const size_t pos) {
-		if (pos >= curCap) throw std::length_error("Wrong Position!");
+		if (pos >= curCap || pos < firstPos) throw std::length_error("Wrong Position!");
 		return elements[pos];
+	}
+
+	const T& c_at(const size_t pos) {
+		return at(pos);
+	}
+
+	const bool remove(const size_t pos) {
+		if (pos >= curCap || pos < firstPos) throw std::length_error("Wrong Position!");
+		~elements[pos];
+		elements[pos] = T();
+		return true;
 	}
 
 	const bool move(vector& v){
@@ -130,9 +154,9 @@ public :
 
 private :
 	
-	size_t curSize;
-	size_t curCap;
-	size_t lastPos;
+	size_t curSize = 0;
+	size_t curCap = 0;
+	size_t lastPos = 0;
 	size_t firstPos = 0;
 	size_t elementSize = sizeof T;
 	T* elements;
@@ -170,7 +194,7 @@ private :
 	const bool copyElementsReverse(const T* src, T* dst, const size_t start, const size_t end) {
 
 		for (auto i = end-1; i >= start; --i) {
-			dst[i] = src[i];
+			*(dst + i) = *(src + i);
 		}
 		return true;
 	}
