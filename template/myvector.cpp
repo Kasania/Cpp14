@@ -11,8 +11,6 @@ class vector {
 public :
 	static const size_t defaultCap = 10;
 
-	
-
 	vector(const size_t cap = defaultCap) {
 		curCap = cap;
 		elements = alloc.allocate(curCap);
@@ -35,10 +33,8 @@ public :
 		elements = alloc.allocate(curCap);
 		for (auto i = values.begin(); i < values.end(); ++i) {
 			insert(*i);
-			++curSize;
 		}
-		initializeElements(elements, curSize, curCap);
-		lastPos = curSize;
+		initializeElements(elements, lastPos, curCap);
 	}
 	
 	~vector()	{
@@ -48,18 +44,24 @@ public :
 		elements = nullptr;
 	}
 
-	const bool reserve(const size_t cap)	{
+	const bool reserve() {
+		return reserve(defaultIncresement());
+	}
+	const bool reserve(const size_t cap) {
 
-		T* newElements = new T[cap];
+		T* newElements = alloc.allocate(cap);
 		initializeElements(newElements, moveElement(elements, newElements, 0, curCap), cap);
-		delete[] elements;
+		deleteElements(elements,curCap);
 		elements = newElements;
 		curCap = cap;
 		return true;	
 	}
 	
-	const size_t& size() const {
-		return curSize;
+	const size_t& start() const {
+		return firstPos;
+	}
+	const size_t& end() const {
+		return lastPos;
 	}
 
 	const size_t& cap() const {
@@ -68,74 +70,89 @@ public :
 
 	const bool insert(const T& target, const size_t pos) {
 		if(pos < firstPos) throw std::length_error("Wrong Position!");
-		if (pos > curCap) reserve(pos + 1);
+		if (pos >= curCap) reserve(pos + 1);
 
 		if (pos >= lastPos) {
 			lastPos = pos;
-			elements[lastPos++];
+			elements[lastPos++] = target;
 		}
 		else {
-			
-			size_t oldLastPos = lastPos;
-			//moveElement()
+			if (curCap <= lastPos+1) reserve();
+			moveElement(elements, (elements + pos + 1), pos, lastPos++);
+			elements[pos] = target;
 		}
 
-		//todo : insert method
-		//if pos >= last insert at pos, last = pos
-		//else move back pos~last to pos+1~last+1 , insert at pos
 		return true;
 	}
 
 	const bool insert(const T& target) {
-		
-		if (curCap <= lastPos) reserve(static_cast<int>(curCap * 1.5 + 1));
+		if (curCap <= lastPos) reserve();
 		elements[lastPos++] = target;
 		return true;
 	}
 
-	T& at(const size_t pos) {
-		if (pos >= curCap || pos < firstPos) throw std::length_error("Wrong Position!");
+
+	T& at(const size_t pos){
+		checkBound(pos);
 		return elements[pos];
 	}
 
-	const T& c_at(const size_t pos) {
+	const T& c_at(const size_t pos){
 		return at(pos);
 	}
 
-	const bool remove(const size_t pos) {
-		if (pos >= curCap || pos < firstPos) throw std::length_error("Wrong Position!");
-		~elements[pos];
-		elements[pos] = T();
+	const bool replace(const T& target, const size_t pos) {
+		checkBound(pos);
+		alloc.destroy(elements+pos);
+		elements[pos] = target;
+		return true;
+	}
+
+	const bool replace(const T&& target, const size_t pos) {
+		checkBound(pos);
+		alloc.destroy(elements + pos);
+		elements[pos] = target;
+		return true;
+	}
+
+	const bool erase(const size_t pos) {
+		checkBound(pos);
+
+		if (pos == lastPos-1) {
+			replace(T(), --lastPos);
+		}
+		else {
+			alloc.destroy((elements + pos));
+			moveElement(elements, (elements + pos), pos + 1, lastPos--);
+		}
+		//if pos == last, erase at last, --last
+		//if pos < last, destroy at pos, move forward, last--
 		return true;
 	}
 
 	const bool move(vector& v){
+		deleteElements(elements,curCap);
 		curCap = v.curCap;
-		curSize = v.curSize;
 		lastPos = v.lastPos;
-		delete[] elements;
 		elements = v.elements;
 		v.release();
 		return true;
 	}
 
 	const bool copy(vector& v) {
+		deleteElements(elements,curCap);
 		this->curCap = v.curCap;
-		this->curSize = v.curSize;
 		lastPos = v.lastPos;
-		delete[] elements;
-		elements = new T[curCap];
+		elements = alloc.allocate(curCap);
 		copyElements(v.elements, v.curCap);
 	}
 	
 	//copy
 	vector<T>& operator = (vector& v) {
 		if (this == &v) return *this;
-		delete[] elements;
-		this->elements = new T[curCap];
-		initializeElements(elements, copyElements(v.elements, elements, v.curSize), curCap);
-		
-		this->curSize = v.curSize;
+		deleteElements(elements, curCap);
+		this->elements = alloc.allocate(curCap);
+		initializeElements(elements, copyElements(v.elements, elements, v.lastPos), curCap);
 		this->curCap = v.curCap;
 		lastPos = v.lastPos;
 		return *this;
@@ -143,8 +160,7 @@ public :
 	//move
 	vector<T>& operator = (vector&& v) {
 		if (this == &v) return *this;
-		delete[] elements;
-		this->curSize = v.curSize;
+		deleteElements(elements,curCap);
 		this->curCap = v.curCap;
 		this->elements = v.elements;
 		lastPos = v.lastPos;
@@ -154,26 +170,48 @@ public :
 
 private :
 	
+	static const size_t firstPos = 0;
+	const size_t elementSize = sizeof T;
 	size_t curSize = 0;
 	size_t curCap = 0;
 	size_t lastPos = 0;
-	size_t firstPos = 0;
-	size_t elementSize = sizeof T;
 	T* elements;
 	std::allocator<T> alloc;
 
+	const size_t defaultIncresement() {
+		return static_cast<size_t>(curCap * 1.5 + 1);
+	}
+
 	//only use this for move elements
 	const bool release() {
-		curSize = 0;
 		curCap = 0;
 		lastPos = 0;
 		elements = nullptr;
 		return true;
 	}
 
-	const bool isInBound(const int pos) {
-		if (pos < curCap) return true;
-		return false;
+	const bool checkBound(const size_t pos) {
+		if (pos >= curCap || pos < firstPos) throw std::length_error("Wrong Position!");
+		return true;
+	}
+
+	void destroyElements(T* src,const size_t len) {
+		destroyElements(src, firstPos, len);
+	}
+
+	void destroyElements(T* src, const size_t start, const size_t end) {
+		for (auto i = start; i<end; ++i)
+			alloc.destroy(elements + i);
+	}
+
+	void deleteElements(T* src, const size_t len) {
+		deleteElements(src, firstPos, len);
+
+	}
+	void deleteElements(T* src, const size_t start, const size_t end) {
+		destroyElements(src, start, end);
+		alloc.deallocate((src+start),(end-start));
+		src = nullptr;
 	}
 
 	const size_t copyElements(const T* src, const size_t len) {
