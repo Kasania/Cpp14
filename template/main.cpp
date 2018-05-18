@@ -6,26 +6,23 @@
 
 auto main() -> int {
 	vector<int> v1;
-	vector<int> v2{ 1,2,3,4,5 };
 	try {
-		v1 = {1,2,3,4,5};
-		v1.reserve(20);
-		v1.insert(12, 7);
-		v1.insert(15, 10);
 
-		for(auto i = v1.start(); i < v1.end();++i)
-			std::cout << i << " : "<<v1.at(i) << std::endl;
-		//v1.erase(10);
-		v1.erase(7);
-		for (auto i = v1.start(); i < v1.end(); ++i)
-			std::cout << i << " : " << v1.at(i) << std::endl;
 
-	}
+		for (int i = 0; i < 100000000;++i) {
+			v1.insert(i);
+		}
+		std::cout << v1.cap() << std::endl;
+		//for(auto i = v1.start(); i < v1.end();++i)
+			//std::cout << i << " : "<<v1.at(i) << std::endl;
+		//for (auto i = v1.start(); i < v1.end(); ++i)
+		//	std::cout << i << " : " << v1.at(i) << std::endl;
+
+			}
 	catch (std::length_error e) {
 		std::cout << e.what() << std::endl;
 	}
 
-	
 	return 0;
 }
 

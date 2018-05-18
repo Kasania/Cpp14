@@ -1,17 +1,32 @@
 /*	
 	vector class
 
+	c-tor
+	d-tor
+
+	reserve(with resize)
+
+
+	insert at pos
+	insert last pos (push_back)
+	erase
+	at
+
+	operator =(copy)
+	operator =(move)
+
 */
 #include <initializer_list>
 #include <stdexcept>
 #include <memory>
+#include <string>
 
-template <typename T>
+template <typename T, class allocator = std::allocator<T>>
 class vector {
 public :
 	static const size_t defaultCap = 10;
-
-	vector(const size_t cap = defaultCap) {
+	
+	vector(const size_t cap = defaultCap) noexcept{
 		curCap = cap;
 		elements = alloc.allocate(curCap);
 		initializeElements(elements, firstPos, curCap);
@@ -44,30 +59,29 @@ public :
 		elements = nullptr;
 	}
 
-	const bool reserve() {
-		return reserve(defaultIncresement());
-	}
-	const bool reserve(const size_t cap) {
-
-		T* newElements = alloc.allocate(cap);
-		initializeElements(newElements, moveElement(elements, newElements, 0, curCap), cap);
-		deleteElements(elements,curCap);
-		elements = newElements;
-		curCap = cap;
-		return true;	
-	}
-	
 	const size_t& start() const {
 		return firstPos;
 	}
 	const size_t& end() const {
 		return lastPos;
 	}
-
 	const size_t& cap() const {
 		return curCap;
 	}
 
+	const bool reserve() {
+		return reserve(defaultIncresement());
+	}
+	const bool reserve(const size_t cap) {
+		T* newElements = alloc.allocate(cap);
+		initializeElements(newElements, moveElement(elements, newElements, 0, curCap), cap);
+		deleteElements(elements,curCap);
+		elements = newElements;
+		curCap = cap;
+		++reservedCount;
+		return true;	
+	}
+	
 	const bool insert(const T& target, const size_t pos) {
 		if(pos < firstPos) throw std::length_error("Wrong Position!");
 		if (pos >= curCap) reserve(pos + 1);
@@ -81,7 +95,6 @@ public :
 			moveElement(elements, (elements + pos + 1), pos, lastPos++);
 			elements[pos] = target;
 		}
-
 		return true;
 	}
 
@@ -103,7 +116,7 @@ public :
 
 	const bool replace(const T& target, const size_t pos) {
 		checkBound(pos);
-		alloc.destroy(elements+pos);
+		alloc.destroy(elements + pos);
 		elements[pos] = target;
 		return true;
 	}
@@ -117,16 +130,21 @@ public :
 
 	const bool erase(const size_t pos) {
 		checkBound(pos);
-
-		if (pos == lastPos-1) {
+		//if pos >= lastpos throw Exception
+		if (pos >= lastPos) {
+			std::string message = std::string("out of bound Exception, \n pos : ") + std::to_string(pos);
+				
+			throw std::length_error(message);
+		}
+		//if pos == last-1, erase at --last
+		else if (pos == lastPos-1) {
 			replace(T(), --lastPos);
 		}
+		//if pos < last, destroy at pos, move forward, last--
 		else {
 			alloc.destroy((elements + pos));
 			moveElement(elements, (elements + pos), pos + 1, lastPos--);
 		}
-		//if pos == last, erase at last, --last
-		//if pos < last, destroy at pos, move forward, last--
 		return true;
 	}
 
@@ -168,18 +186,22 @@ public :
 		return *this;
 	}
 
+	T& operator[](size_t pos) {
+		return *(elements + pos);
+	}
+
 private :
-	
 	static const size_t firstPos = 0;
 	const size_t elementSize = sizeof T;
 	size_t curSize = 0;
 	size_t curCap = 0;
 	size_t lastPos = 0;
 	T* elements;
-	std::allocator<T> alloc;
+	allocator alloc;
+	size_t reservedCount = 0;
 
 	const size_t defaultIncresement() {
-		return static_cast<size_t>(curCap * 1.5 + 1);
+		return static_cast<size_t>(curCap * ( 1.5 + (reservedCount / 8.0) ) + 1);
 	}
 
 	//only use this for move elements
@@ -191,7 +213,11 @@ private :
 	}
 
 	const bool checkBound(const size_t pos) {
-		if (pos >= curCap || pos < firstPos) throw std::length_error("Wrong Position!");
+		
+		if (pos >= curCap || pos < firstPos) {
+			std::string message = std::string("out of bound Exception, \n pos : ") + std::to_string(pos);
+			throw std::length_error(message);
+		}
 		return true;
 	}
 
