@@ -1,19 +1,28 @@
 /*	
 	vector class
 
-	c-tor
+	c-tor()
+	c-tor(copy)
+	c-tor(move)
+	c-tor(initializer_list)
 	d-tor
 
-	reserve(with resize)
+	reserve()
+	reserve(cap)
 
+	resize(curCap)
+	resize(cap)
 
 	insert at pos
-	insert last pos (push_back)
+	insert last pos (=push_back)
 	erase
 	at
+	c_at
 
 	operator =(copy)
 	operator =(move)
+	operator []
+	operator [] const
 
 */
 #include <initializer_list>
@@ -29,7 +38,6 @@ public :
 	vector(const size_t cap = defaultCap) noexcept{
 		curCap = cap;
 		elements = alloc.allocate(curCap);
-		initializeElements(elements, firstPos, curCap);
 	}
 	vector(const vector& v) {
 		copy(v);
@@ -49,13 +57,14 @@ public :
 		for (auto i = values.begin(); i < values.end(); ++i) {
 			insert(*i);
 		}
-		initializeElements(elements, lastPos, curCap);
 	}
 	
 	~vector()	{
 		for(auto i = firstPos ;  i<curCap; ++i)
 		alloc.destroy(elements+i);
+		
 		alloc.deallocate(elements, curCap);
+		
 		elements = nullptr;
 	}
 
@@ -73,17 +82,30 @@ public :
 		return reserve(defaultIncresement());
 	}
 	const bool reserve(const size_t cap) {
+		if (cap == curCap) return true;
 		T* newElements = alloc.allocate(cap);
-		initializeElements(newElements, moveElement(elements, newElements, 0, curCap), cap);
-		deleteElements(elements,curCap);
+		moveElement(elements, newElements, 0, curCap);
+		deleteElements(elements, curCap);
 		elements = newElements;
 		curCap = cap;
 		++reservedCount;
 		return true;	
 	}
+
+	const bool resize() {
+		return resize(curCap);
+	}
+	const bool resize(const size_t cap) {
+		if (cap >= lastPos) {
+			reserve(cap);
+		}
+		initializeElements(elements, lastPos, cap);
+		return true;
+	}
+
 	
 	const bool insert(const T& target, const size_t pos) {
-		if(pos < firstPos) throw std::length_error("Wrong Position!");
+		if (pos < firstPos) outOfBoundException();
 		if (pos >= curCap) reserve(pos + 1);
 
 		if (pos >= lastPos) {
@@ -132,9 +154,7 @@ public :
 		checkBound(pos);
 		//if pos >= lastpos throw Exception
 		if (pos >= lastPos) {
-			std::string message = std::string("out of bound Exception, \n pos : ") + std::to_string(pos);
-				
-			throw std::length_error(message);
+			outOfBoundException();
 		}
 		//if pos == last-1, erase at --last
 		else if (pos == lastPos-1) {
@@ -148,21 +168,22 @@ public :
 		return true;
 	}
 
-	const bool move(vector& v){
+	vector<T>& move(vector& v){
 		deleteElements(elements,curCap);
 		curCap = v.curCap;
 		lastPos = v.lastPos;
 		elements = v.elements;
 		v.release();
-		return true;
+		return *this;
 	}
 
-	const bool copy(vector& v) {
+	vector<T>& copy(vector& v) {
 		deleteElements(elements,curCap);
 		this->curCap = v.curCap;
 		lastPos = v.lastPos;
 		elements = alloc.allocate(curCap);
 		copyElements(v.elements, v.curCap);
+		return *this;
 	}
 	
 	//copy
@@ -170,7 +191,7 @@ public :
 		if (this == &v) return *this;
 		deleteElements(elements, curCap);
 		this->elements = alloc.allocate(curCap);
-		initializeElements(elements, copyElements(v.elements, elements, v.lastPos), curCap);
+		copyElements(v.elements, elements, v.lastPos);
 		this->curCap = v.curCap;
 		lastPos = v.lastPos;
 		return *this;
@@ -190,6 +211,10 @@ public :
 		return *(elements + pos);
 	}
 
+	const T& operator[](size_t pos) const{
+		return *(elements + pos);
+	}
+
 private :
 	static const size_t firstPos = 0;
 	const size_t elementSize = sizeof T;
@@ -200,8 +225,13 @@ private :
 	allocator alloc;
 	size_t reservedCount = 0;
 
+	void outOfBoundException() {
+		std::string message = std::string("out of bound Exception, \n pos : ") + std::to_string(pos);
+		throw std::length_error(message);
+	}
+
 	const size_t defaultIncresement() {
-		return static_cast<size_t>(curCap * ( 1.5 + (reservedCount / 8.0) ) + 1);
+		return static_cast<size_t>(curCap * ( 1.5 + (reservedCount / 10.0) ) + 1);
 	}
 
 	//only use this for move elements
@@ -214,10 +244,8 @@ private :
 
 	const bool checkBound(const size_t pos) {
 		
-		if (pos >= curCap || pos < firstPos) {
-			std::string message = std::string("out of bound Exception, \n pos : ") + std::to_string(pos);
-			throw std::length_error(message);
-		}
+		if (pos >= curCap || pos < firstPos) outOfBoundException();
+			
 		return true;
 	}
 
@@ -264,7 +292,7 @@ private :
 	}
 
 	const size_t initializeElements(T* target, const size_t start, const size_t end) {
-		for (auto i = start; i < end; ++i) {
+		for (auto i = start; i < end; ++i,++lastPos) {
 			*(target + i) = T();
 		}
 		return end;
@@ -275,5 +303,6 @@ private :
 		return end;
 	}
 };
+
 
 
